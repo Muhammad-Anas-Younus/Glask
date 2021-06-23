@@ -1,10 +1,33 @@
 import {useEffect, useRef, useState} from 'react'
+import {gql, useQuery} from "@apollo/client"
 import Link from 'next/link'
 import Image from "next/image"
 import React from 'react'
 import ScrollContainer from 'react-indiana-drag-scroll'
 import AOS from "aos"
 import 'aos/dist/aos.css'
+
+const GET_PRODUCTS = gql`
+    {
+        products (first:3){
+          edges {
+            node {
+              id
+              name
+              link
+              slug
+              image {
+                sourceUrl
+              }
+              ... on SimpleProduct {
+                price
+              }
+            }
+          }
+        }
+      }
+      
+    `
 
 const LandingPage = () => {
     const pRef = useRef()
@@ -22,6 +45,8 @@ const LandingPage = () => {
     useEffect(() => {
         AOS.init({once: true})
     }, [])
+    const {data, loading, error} = useQuery(GET_PRODUCTS)
+    
     return (
         <div className="w-screen">
             <div className="hero w-full h-85vh lg:h-screen flex lg:flex-col">
@@ -59,9 +84,23 @@ const LandingPage = () => {
                     }} className="cursor_div h-70% w-full flex items-center">
                         <ScrollContainer style={{}} className="items_container w-full h-full overflow-x-auto flex items-center md:h-full">
                             <div ref={cursor} className="cursor hidden " style={{fontFamily: "'Poppins', san-serif", pointerEvents: 'none'}}>DRAG</div>
-                            <div className="item bg-gray-300 mr-10 w-40% h-90% flex-shrink-0 ml-10 md:w-50% md:h-full"></div>
-                            <div className="item bg-gray-300 mr-10 w-40% h-90% flex-shrink-0 md:w-50% md:h-full"></div>
-                            <div className="item bg-gray-300 mr-10 w-40% h-90% flex-shrink-0 md:w-50% md:h-full"></div>
+                            {loading && <h1>Loading, please wait..</h1>}
+                            {data && data.products.edges.map(product => (
+                                <Link 
+                                href={`/shop/id?id=${product.node.id}`}
+                                as={`/shop/${product.node.id}`}
+                                >
+                                <div key={product.node.id} className="item mr-10 w-40% h-90% flex-shrink-0 ml-10 md:w-50% md:h-full">
+                                    <div className="image w-full h-70%">
+                                        <img src={product.node.image.sourceUrl} alt=""  className="w-full h-full object-cover"/>
+                                    </div>
+                                    <div className="text h-30% w-full flex flex-col items-center justify-center">
+                                        <h1>{product.node.name}</h1>
+                                        <p>{product.node.price}</p>
+                                    </div>
+                                </div>
+                                </Link>
+                            ))}
                         </ScrollContainer>
                     </div>
                 </section>
